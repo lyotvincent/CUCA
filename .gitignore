@@ -1,0 +1,15 @@
+__pycache__
+*pyc
+*tar
+.vscode
+
+example_data
+model_weights_*
+comparison_methods
+results*
+
+tutorial_*
+GenePT_*
+
+
+

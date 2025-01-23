@@ -1,7 +1,7 @@
 FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04
 
 LABEL maintainer="cyyan@mail.nankai.edu.cn"
-LABEL description="Base docker image for HEST develop environment."
+LABEL description="Base docker image for CUCA develop environment."
 
 ARG user=appuser
 ARG PYTHON_VERSION=3.9
@@ -66,9 +66,6 @@ RUN git clone https://github.com/Mahmoodlab/CONCH.git &&\
 
 RUN pip install hestcore -i https://pypi.Python.org/simple/ &&\
     pip cache purge
-
-# RUN git clone https://github.com/mahmoodlab/HEST.git &&\
-#     cd HEST; pip install -e .
 
 # export port 6009 on the docker
 EXPOSE 6009
