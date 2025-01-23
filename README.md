@@ -96,7 +96,7 @@ All data used in this work are publicly available.
 
 - The stnet data is available in Mendeley Data at [https://data.mendeley.com/datasets/29ntw7sh4r/5](https://data.mendeley.com/datasets/29ntw7sh4r/5).
 
-**FYI**: For convenience, you can also refer to [Processed data from Hist2Cell](https://connecthkuhk-my.sharepoint.com/personal/wqzhao98_connect_hku_hk/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fwqzhao98%5Fconnect%5Fhku%5Fhk%2FDocuments%2FHist2Cell%5Fdata&ga=1).
+**FYI**: For convenience, you can also refer to [Processed data from Hist2Cell](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/wqzhao98_connect_hku_hk/Eiq-wLB0Pt5FjF9evrr2HEIBpZQYxoQXgytf0bjNsZN2LQ?e=v89Ulr).
 
 
 The data was uploaded in compressed format via Onedrive, please download the data and unzip them using `tar -xzvf` command.
