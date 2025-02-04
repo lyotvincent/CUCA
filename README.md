@@ -228,7 +228,7 @@ CUDA_VISIBLE_DEVICES=0 python test_evaluation.py -ep ${results_dir}/${dataset}/$
 
 ### Trained models weights
 
-The pre-trained weights of our model on the humanlung, her2st, and stnet datasets can be downloaded in [HERE(TBD)](https://github.com/lyotvincent/CUCA). The weights can be used to reproduce the results in our paper. Also, It has the capability of inferring on new H&E histology images.
+The pre-trained weights of our model on the humanlung, her2st, and stnet datasets can be downloaded in [HERE](https://pan.baidu.com/s/12PI4It5iOSuvXiaitLe7oQ?pwd=vwxc). The weights can be used to reproduce the results in our paper. Also, It has the capability of inferring on new H&E histology images.
 
 
 ## Contact
