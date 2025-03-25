@@ -205,8 +205,11 @@ class HisToGene(nn.Module):
         x = patches + centers_x + centers_y
         h = self.vit(x)
         x = self.gene_head(h)
-        return x
-
+        
+        if 'return_embed' in kwargs and kwargs['return_embed']:
+            return h, x
+        else:
+            return x
     # def training_step(self, batch, batch_idx):        
     #     patch, center, exp = batch
     #     pred = self(patch, center)

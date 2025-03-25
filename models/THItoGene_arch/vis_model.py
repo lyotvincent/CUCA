@@ -190,7 +190,7 @@ class THItoGene(nn.Module):
             nn.Linear(1024, n_genes)
         )
 
-    def forward(self, patches, centers, adj):
+    def forward(self, patches, centers, adj, return_embed=False):
         B, N, C, H, W = patches.shape
         patches = patches.reshape(B * N, C, H, W)
         patches = self.odconv2d(patches)
@@ -208,9 +208,13 @@ class THItoGene(nn.Module):
         x = self.vit(x)
         x = x.reshape(x.shape[1], -1)
 
-        x = self.gat(x, adj)
-        x = self.gene_head(x)
-        return x
+        x_embedd = self.gat(x, adj)
+        x = self.gene_head(x_embedd)
+
+        if return_embed:
+            return x_embedd, x
+        else:
+            return x
 
     # def training_step(self, batch, batch_idx):
     #     patch, center, exp, adj = batch

@@ -87,17 +87,17 @@ def _init_model(architecture_name,
         model = Hist2Cell(backbone=backbone_name, cell_dim=num_cls, vit_depth=3)
 
     elif architecture_name == "THItoGene":
-        model = THItoGene(n_genes=num_cls, route_dim=64, caps=20, heads=[16, 8], n_layers=4, n_pos=128)
+        model = THItoGene(n_genes=num_cls, route_dim=64, caps=20, heads=[16, 8], n_layers=4, n_pos=128) # 240 is for humanlung dataset else 128
     
     elif architecture_name == "HisToGene":
-        model = HisToGene(n_layers=8, n_genes=num_cls, patch_size=112, n_pos=128)
+        model = HisToGene(n_layers=8, n_genes=num_cls, patch_size=112, n_pos=128)  # 128 for all three datasets
     
     elif architecture_name == "Hist2ST":
         model = Hist2ST(n_genes=num_cls, depth1=2, depth2=8, depth3=4, 
                         kernel_size=5, patch_size=7, 
                         fig_size=112, heads=16, channel=32, 
                         dropout=0.2, zinb=0, nb=False, 
-                        bake=5, lamb=0.5, policy='mean', n_pos=128) # 240 is for humanlung dataset else 128
+                        bake=5, lamb=0.5, policy='mean', n_pos=240) # 240 is for humanlung dataset else 128
     
     elif architecture_name == "ST-Net":
         import torchvision

@@ -6,7 +6,9 @@ import torchvision.transforms as transforms
 
 from PIL import Image
 from torch_geometric.data import Batch
-from scipy.spatial import distance
+from scipy.spatial import distance, KDTree
+
+import scanpy as sc
 
 from utils.file_utils import read_assets_from_h5
 
@@ -34,7 +36,20 @@ class EmbedCellGeneDataset(torch.utils.data.Dataset):
 
 class ImgCellGeneDataset(torch.utils.data.Dataset):
     
-    def __init__(self, split_file_name, data_root, img_transform=None):
+    def __init__(self, split_file_name, data_root, img_transform=None, OTHER_DECONV_METHODS=None):
+        """
+        split_file_name: str
+            The file name of the split file
+        data_root: str
+            The root directory of the data
+        img_transform: torchvision.transforms
+            The image transformation to apply to the images
+        OTHER_DECONV_METHODS: str [default: None]
+            The other deconvolution methods to use, such as 'Seurat', 'RCTD', 'tangram', etc.
+            None for default Cell2location deconvolution methods
+        """
+        if OTHER_DECONV_METHODS is not None:
+            sp_adata = sc.read_h5ad(os.path.join(data_root, 'sp.X_norm5e4_log1p_more_deconv.h5ad')) # read the spatial data
 
         train_slides = open(split_file_name).read().split('\n')
         self.batch_size = len(train_slides) # batch size is the number of slides
@@ -45,6 +60,14 @@ class ImgCellGeneDataset(torch.utils.data.Dataset):
         position_data = []
         for idx, item in enumerate(train_slides):
             graph_data = torch.load(os.path.join(data_root, item+'.pt'))
+
+            if OTHER_DECONV_METHODS is not None:
+                sample_adata = sp_adata[sp_adata.obs['sample'] == item].copy() # get the sample data for the item slide
+                print(sample_adata)
+                cellabundance, celltype_name_list = self.get_deconv_cell_abundance(sample_adata, graph_data.pos, OTHER_DECONV_METHODS) # get the cell abundance data from the sample data
+                print(f"Slide ID: {train_slides}, Using {OTHER_DECONV_METHODS} deconv. methods\n cellabundance cell types: {celltype_name_list}") 
+
+                graph_data.y[:, 250:] = cellabundance # replace the cell abundance data in the graph data
 
             img_data.append(graph_data.x)
             gene_celltype_data.append(graph_data.y)
@@ -69,6 +92,39 @@ class ImgCellGeneDataset(torch.utils.data.Dataset):
             img = self.img_transform(img)
 
         return {'x': img, 'y': gene_celltype, 'pos': position, 'edge_index': torch.tensor(0.)}
+
+    ### revision 20250319, Get the cell abundance data from the h5ad file according to the position data from the PT file
+    def get_deconv_cell_abundance(self, sample_adata, position_data, deconv_method='tangram'):
+        """
+        deconv_method: str
+            The method used for deconvolution. Default is 'tangram', or RCTD'
+        return:
+            cellabundance: torch.tensor
+                The cell abundance data from the h5ad file
+            celltypes: list
+                The cell type names for the cell abundance
+        """
+        # Compare the coordinates from position_data with spatial coordinates from sample_adata
+        spatial_coords = sample_adata.obsm['spatial']
+        pt_positions = position_data.numpy()  # Convert torch tensor to numpy array
+
+        # Check if the number of spots matches between the two data sources
+        assert len(pt_positions) == len(sample_adata), "Number of spots in PT file and AnnData do not match"
+
+        # Create a KDTree from the spatial coordinates
+        tree = KDTree(spatial_coords)
+
+        # Find the closest spot for each PT position
+        _, indices = tree.query(pt_positions)
+
+        # Get the spot IDs corresponding to the matched indices
+        # matched_spot_ids = [sample_adata.obs.index[i] for i in indices]
+
+        # Check if the number of spots matches between the two data sources
+        assert (sample_adata.obsm['spatial'][indices, :] - pt_positions).sum() == 0, "Spatial coordinates do not match"
+        cellabundance = sample_adata.obsm[deconv_method].iloc[indices, :]
+
+        return torch.tensor(cellabundance.values), list(cellabundance.columns)
 
 
 def load_graph_pt_data(split_file_name, data_root):
@@ -115,7 +171,7 @@ class THItoGeneDataset(torch.utils.data.Dataset):
         else:
             self.img_transform = img_transform
 
-        spot_step = 110 if split_file_name.split("/")[-2] == "humanlung_cell2location" else 290
+        spot_step = 110 if split_file_name.split("/")[-2] != "humanlung_cell2location" else 290
         self.position_data = [np.around(pos/spot_step).int() for pos in self.position_data] # convert pixel to position
 
         self.adj = [self.calcADJ(coord=pos, k=4, pruneTag='NA') for pos in self.position_data]

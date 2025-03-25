@@ -43,7 +43,7 @@ class Hist2Cell(nn.Module):
         self.fused_head = Mlp(in_features=256, hidden_features=512*2, out_features=cell_dim)
     
     
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, return_embed=False):
         x_spot = self.backbone(x)
         x_spot = x_spot.squeeze()
         
@@ -61,11 +61,15 @@ class Hist2Cell(nn.Module):
         cell_prediction_global, x_global = self.cell_transformer(x_cell)
         cell_prediction_global = cell_prediction_global.squeeze()
         x_global = x_global.squeeze()
-        cell_prediction_fused = self.fused_head((x_spot+x_local+x_global)/3.0)
+
+        fused_embedd = (x_spot+x_local+x_global)/3.0
+        cell_prediction_fused = self.fused_head(fused_embedd)
         cell_prediction = (cell_predication_spot + cell_prediction_local + cell_prediction_global + cell_prediction_fused) / 4.0
         
-        return cell_prediction
-    
+        if return_embed:
+            return fused_embedd, cell_prediction
+        else:
+            return cell_prediction
 
 if __name__ == "__main__":
     pass
