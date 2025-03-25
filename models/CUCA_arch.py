@@ -108,10 +108,19 @@ class CUCA(nn.Module):
         self.regression_head = torch.nn.Linear(proj_dim, num_cls)
         self.process_backbone(**LoraCfgParams)
 
+        if proj_dim == 256:
+            model_size_type = 'big'
+        elif proj_dim == 512:
+            model_size_type = 'huge'
+        elif proj_dim == 1024:
+            model_size_type = 'giant'
+        else:
+            raise NotImplementedError
+
         if self.embed_type == "geneexp":
-            self.snn_branch = SNN(input_dim=aux_output, model_size_omic='huge', n_classes=aux_output)
+            self.snn_branch = SNN(input_dim=aux_output, model_size_omic=model_size_type, n_classes=aux_output)
         elif self.embed_type == "genept":
-            self.snn_branch = SNN(input_dim=1536, model_size_omic='huge', n_classes=aux_output) # genept embedding dims 1536
+            self.snn_branch = SNN(input_dim=1536, model_size_omic=model_size_type, n_classes=aux_output) # genept embedding dims 1536
         else:
             pass
 

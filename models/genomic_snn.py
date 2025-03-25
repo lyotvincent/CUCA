@@ -15,7 +15,8 @@ class SNN(nn.Module):
         self.size_dict_omic = {'small': [256, 256, 256], 
                                'medium': [512, 512, 512], 
                                'big': [1024, 1024, 256],
-                               'huge': [1024, 1024, 512]}        
+                               'huge': [1024, 1024, 512],
+                               'giant': [1024, 1024, 1024]}        
         
         ### Constructing Genomic SNN
         hidden = self.size_dict_omic[model_size_omic]

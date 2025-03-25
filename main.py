@@ -282,6 +282,7 @@ def main(cur_split, loaders, exp_res_dir=None, device="cuda", **param_kwargs):
                         )
 
     model = model.to(device)
+    logger.info(f"******** Init Model: {model}\n ********")
 
     optimizer, scheduler = _init_optim(model, param_kwargs['optim_fn'], param_kwargs['lr_rate'], 
                                     param_kwargs['weight_reg'], 
