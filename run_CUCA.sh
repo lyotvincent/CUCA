@@ -20,6 +20,8 @@ exp_code=${architecture}_${backbone}_BN_${loss_main}_a${lambda_main}b${lambda_re
 CUDA_VISIBLE_DEVICES=${device} python main.py -c cfgs/cfgs_lung.yaml \
 --opts CKPTS exp_code ${exp_code} HyperParams pre_extracted ${pre_extracted} HyperParams max_epochs ${max_epochs} HyperParams proj_dim ${proj_dim} HyperParams loss_main ${loss_main} HyperParams lambda_main ${lambda_main} HyperParams lambda_rec ${lambda_rec} HyperParams architecture ${architecture} HyperParams backbone ${backbone} HyperParams lr_rate ${lr_rate}
 ## evaluating the model on the humanlung dataset
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_JSD.py -ep results/humanlung_cell2location/${exp_code}
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_spearmanr.py -ep results/humanlung_cell2location/${exp_code}
 CUDA_VISIBLE_DEVICES=${device} python test_evaluation.py -ep results/humanlung_cell2location/${exp_code}
 
 
@@ -27,6 +29,8 @@ CUDA_VISIBLE_DEVICES=${device} python test_evaluation.py -ep results/humanlung_c
 CUDA_VISIBLE_DEVICES=${device} python main.py -c cfgs/cfgs_her2st.yaml \
 --opts CKPTS exp_code ${exp_code} HyperParams pre_extracted ${pre_extracted} HyperParams max_epochs ${max_epochs} HyperParams proj_dim ${proj_dim} HyperParams loss_main ${loss_main} HyperParams lambda_main ${lambda_main} HyperParams lambda_rec ${lambda_rec} HyperParams architecture ${architecture} HyperParams backbone ${backbone} HyperParams lr_rate ${lr_rate}
 ## evaluating the model on the her2st dataset
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_JSD.py -ep results/her2st/${exp_code}
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_spearmanr.py -ep results/her2st/${exp_code}
 CUDA_VISIBLE_DEVICES=${device} python test_evaluation.py -ep results/her2st/${exp_code}
 
 
@@ -38,4 +42,6 @@ exp_code=${architecture}_${backbone}_BN_${loss_main}_a${lambda_main}b${lambda_re
 CUDA_VISIBLE_DEVICES=${device} python main.py -c cfgs/cfgs_stnet.yaml \
 --opts CKPTS exp_code ${exp_code} HyperParams pre_extracted ${pre_extracted} HyperParams max_epochs ${max_epochs} HyperParams proj_dim ${proj_dim} HyperParams loss_main ${loss_main} HyperParams lambda_main ${lambda_main} HyperParams lambda_rec ${lambda_rec} HyperParams architecture ${architecture} HyperParams backbone ${backbone} HyperParams lr_rate ${lr_rate}
 ## evaluating the model on the stnet dataset
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_JSD.py -ep results/stnet/${exp_code}
+CUDA_VISIBLE_DEVICES=${device} python test_evaluation_spearmanr.py -ep results/stnet/${exp_code}
 CUDA_VISIBLE_DEVICES=${device} python test_evaluation.py -ep results/stnet/${exp_code}

@@ -6,7 +6,7 @@
 > Submitted to ISMB/ECCB 2025 <br>
 
 
-![overview](docs/fig1_framework.png)
+<!-- ![overview](docs/fig1_framework.png) -->
 
 
 
@@ -70,20 +70,22 @@ The codes have been implemented on Ubuntu 22.04 LTS. The installation in other o
 
 ### Packages and version
 
-The packages required have been provided in the file [requirements.txt](requirements.txt)
+The packages required have been provided in the file [environment.yml](environment.yml)
 
 ### Installation
 
-<!-- PhiHER2 is implemented by Python 3.8 and PyTorch 2.0.  -->
+<!-- CUCA is implemented by Python 3.9 and PyTorch 2.4.1  -->
 To install the environment, you can run the command in the terminal:
 
 ```shell
-conda create --name <env_name> python=3.9
-conda activate <env_name>
-pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate cuca
 ```
 
-**News: The environments for experiments has been configured into a docker image, the Dockerfile is provided [HERE](Dockerfile)**
+OR
+
+✨ You can use the Docker image for a streamlined setup. The Dockerfile is provided [HERE](Dockerfile). Simply build and run the image to get started.
+
 
 
 ## 2. Data 
@@ -222,7 +224,10 @@ The training scripts above will generate the evaluated quantitative results into
 We also implemented a script for individual quantitative evaluation into `csv` result files. We reported these results in our paper. You can execute it by modifying the specific config parameters.
 
 ```shell
+CUDA_VISIBLE_DEVICES=0 python test_evaluation_JSD.py -ep ${results_dir}/${dataset}/${exp_code}
+CUDA_VISIBLE_DEVICES=0 python test_evaluation_spearmanr.py -ep ${results_dir}/${dataset}/${exp_code}
 CUDA_VISIBLE_DEVICES=0 python test_evaluation.py -ep ${results_dir}/${dataset}/${exp_code}
+
 ```
 
 
