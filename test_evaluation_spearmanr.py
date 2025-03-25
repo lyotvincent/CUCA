@@ -5,7 +5,8 @@ from tqdm import tqdm
 import pickle
 
 import argparse, json
-from scipy.stats import pearsonr
+from scipy.stats import spearmanr, pearsonr
+
 
 import torch
 from torch_geometric.data import Batch
@@ -76,18 +77,21 @@ def external_eval(cur_split, test_loader, exp_res_dir=None, device="cuda", **par
 
         if param_kwargs['architecture'] in ["THItoGene", "HisToGene", "Hist2ST"]:
             if param_kwargs['architecture'] == "Hist2ST":
-                pred_outputs, _, _ = model(patches=x, centers=graph['pos'].to(device).long(), adj=graph['adj'].to(device))
+                proj_embed, pred_outputs, _, _ = model(patches=x, centers=graph['pos'].to(device).long(), adj=graph['adj'].to(device), return_embed=True)
             else:
-                pred_outputs = model(patches=x, centers=graph['pos'].to(device), adj=graph['adj'].to(device))
+                proj_embed, pred_outputs = model(patches=x, centers=graph['pos'].to(device), adj=graph['adj'].to(device), return_embed=True)
             pred_outputs = pred_outputs.squeeze(0) # remove the batch (slide) dimension
             cell_label = cell_label.squeeze(0) # remove the batch (slide) dimension
             gene_exp_cell_abd_label = gene_exp_cell_abd_label.squeeze(0) # remove the batch (slide) dimension
 
         elif param_kwargs['architecture'] in ["ST-Net"]:
             pred_outputs = model(x=x)
-
+            proj_embed = torch.zeros_like(pred_outputs) # dummy variable for compatibility with the rest of the code
+            
         else:
             proj_embed, pred_outputs = model(x=x, edge_index=edge_index, return_embed=True)
+
+        pred_outputs = torch.clip(pred_outputs, 0, None) # clip the negative values to 0
 
         if isinstance(criterion, torch.nn.KLDivLoss): # KL divergence loss requires log_softmax
             cell_loss = criterion(torch.nn.functional.log_softmax(pred_outputs, dim=1), 
@@ -125,12 +129,14 @@ def external_eval(cur_split, test_loader, exp_res_dir=None, device="cuda", **par
         test_embed_array[-1] = np.expand_dims(test_embed_array[-1], axis=0)
     test_embed_array = np.concatenate(test_embed_array)
 
-    dict_split_cell_abundance_pearson = {}
+    dict_split_cell_abundance_spearmanr_r = {}
     for cell_idx in range(test_cell_pred_array.shape[1]):
-        r, p = pearsonr(test_cell_pred_array[:, cell_idx], test_cell_label_array[:, gene_cell_split_idx+cell_idx])
-        dict_split_cell_abundance_pearson.update({f"celltype_{cell_idx}": {"pcc": r, "pval": p}})
+        spearmanr_r, p = spearmanr(test_cell_pred_array[:, cell_idx].flatten(), 
+                                   test_cell_label_array[:, gene_cell_split_idx+cell_idx].flatten())
 
-    dict_slides_cell_abundance_pearson = {}
+        dict_split_cell_abundance_spearmanr_r.update({f"celltype_{cell_idx}": {"spearmanr_r": spearmanr_r, "pval": p}})
+
+    dict_slides_cell_abundance_spearmanr_r = {}
     dict_slides_spot_Predictions = dict()
 
     test_dataset = test_loader.data if hasattr(test_loader, 'data') else test_loader.dataset # get the dataset object from the loader
@@ -147,14 +153,16 @@ def external_eval(cur_split, test_loader, exp_res_dir=None, device="cuda", **par
                                          'embeds': test_embed_array_sub
                                          }
 
-        dict_one_slide_all_celltype_pearson = {}
+        dict_one_slide_all_celltype_spearmanr_r = {}
         for cell_idx in range(test_cell_pred_array_sub.shape[1]):
-            r, p = pearsonr(test_cell_pred_array_sub[:, cell_idx], test_cell_label_array_sub[:, gene_cell_split_idx+cell_idx])
-            dict_one_slide_all_celltype_pearson.update({f"celltype_{cell_idx}": {"pcc": r, "pval": p}})
+            spearmanr_r, p = spearmanr(test_cell_pred_array_sub[:, cell_idx].flatten(), 
+                                       test_cell_label_array_sub[:, gene_cell_split_idx+cell_idx].flatten())
 
-        dict_slides_cell_abundance_pearson.update({f"id_{slide_no}": pd.DataFrame(dict_one_slide_all_celltype_pearson)})
+            dict_one_slide_all_celltype_spearmanr_r.update({f"celltype_{cell_idx}": {"spearmanr_r": spearmanr_r, "pval": p}})
 
-    return dict_split_cell_abundance_pearson, dict_slides_cell_abundance_pearson, dict_slides_spot_Predictions, test_cell_abundance_loss
+        dict_slides_cell_abundance_spearmanr_r.update({f"id_{slide_no}": pd.DataFrame(dict_one_slide_all_celltype_spearmanr_r)})
+
+    return dict_split_cell_abundance_spearmanr_r, dict_slides_cell_abundance_spearmanr_r, dict_slides_spot_Predictions, test_cell_abundance_loss
 
 
 
@@ -173,8 +181,8 @@ if __name__ == "__main__":
         cell_type_info = pickle.load(f)
     cell_type_info = {f"celltype_{idx}": cell_type_info[idx] for idx in range(len(cell_type_info))}
     
-    all_splits_pearson = {}
-    all_slides_pearson = {}
+    all_splits_spearmanr_r = {}
+    all_slides_spearmanr_r = {}
     all_slides_predictions = {}
     all_splits_loss = {}
     
@@ -216,38 +224,38 @@ if __name__ == "__main__":
 
         config['HyperParams']['LoraCfgParams'] = config['LoraCfgParams']
 
-        dict_split_cell_type_pcc, dict_slides_cell_type_pcc, dict_slides_spot_predictions, test_loss = external_eval(cur_split, test_loader, args.exp_path, device=device, **config["HyperParams"])
+        dict_split_cell_type_spearmanr_r, dict_slides_cell_type_spearmanr_r, dict_slides_spot_predictions, test_loss = external_eval(cur_split, test_loader, args.exp_path, device=device, **config["HyperParams"])
 
-        all_splits_pearson.update({cur_split: pd.DataFrame(dict_split_cell_type_pcc).rename(columns=cell_type_info)})
+        all_splits_spearmanr_r.update({cur_split: pd.DataFrame(dict_split_cell_type_spearmanr_r).rename(columns=cell_type_info)})
         all_splits_loss.update({cur_split: test_loss})
 
         slide_name_mapping = {f"id_{idx}": test_slides[idx] for idx in range(len(test_slides))}
-        dict_slides_cell_type_pcc = {slide_name_mapping[slide_id]: dict_slides_cell_type_pcc[slide_id] for slide_id in dict_slides_cell_type_pcc.keys()}
+        dict_slides_cell_type_spearmanr_r = {slide_name_mapping[slide_id]: dict_slides_cell_type_spearmanr_r[slide_id] for slide_id in dict_slides_cell_type_spearmanr_r.keys()}
         dict_slides_spot_predictions = {slide_name_mapping[slide_id]: dict_slides_spot_predictions[slide_id] for slide_id in dict_slides_spot_predictions.keys()}
 
-        all_slides_pearson.update(dict_slides_cell_type_pcc)
+        all_slides_spearmanr_r.update(dict_slides_cell_type_spearmanr_r)
         all_slides_predictions.update(dict_slides_spot_predictions)
 
-    all_splits_pearson = pd.concat(all_splits_pearson.values(), keys=[name for name in all_splits_pearson.keys()])
+    all_splits_spearmanr_r = pd.concat(all_splits_spearmanr_r.values(), keys=[name for name in all_splits_spearmanr_r.keys()])
 
-    all_splits_pearson.loc["split_mean"] = (all_splits_pearson.iloc[0::2, :].mean(0)) # mean along all splits
-    all_splits_pearson.insert(all_splits_pearson.shape[1], 'celltype_mean', all_splits_pearson.mean(1).values) # mean along all cell types
+    all_splits_spearmanr_r.loc["split_mean"] = (all_splits_spearmanr_r.iloc[0::2, :].mean(0)) # mean along all splits
+    all_splits_spearmanr_r.insert(all_splits_spearmanr_r.shape[1], 'celltype_mean', all_splits_spearmanr_r.mean(1).values) # mean along all cell types
 
-    all_splits_pearson.to_csv(os.path.join(args.exp_path, "all_splits_all_celltypes_pearson_embed.csv"))
-    print(f"all_splits_pearson: {all_splits_pearson}")
+    all_splits_spearmanr_r.to_csv(os.path.join(args.exp_path, "all_splits_all_celltypes_spearmanr_r_embed.csv"))
+    print(f"all_splits_spearmanr_r: {all_splits_spearmanr_r}")
     
-    all_slides_pearson = pd.concat(all_slides_pearson.values(), keys=[name for name in all_slides_pearson.keys()])
-    all_slides_pearson = all_slides_pearson.rename(columns=cell_type_info)
+    all_slides_spearmanr_r = pd.concat(all_slides_spearmanr_r.values(), keys=[name for name in all_slides_spearmanr_r.keys()])
+    all_slides_spearmanr_r = all_slides_spearmanr_r.rename(columns=cell_type_info)
     
-    all_slides_pearson.loc["slide_mean"] = (all_slides_pearson.iloc[0::2, :].mean(0)) # mean along all splits
-    all_slides_pearson.insert(all_slides_pearson.shape[1], 'celltype_mean', all_slides_pearson.mean(1).values) # mean along all cell types
+    all_slides_spearmanr_r.loc["slide_mean"] = (all_slides_spearmanr_r.iloc[0::2, :].mean(0)) # mean along all splits
+    all_slides_spearmanr_r.insert(all_slides_spearmanr_r.shape[1], 'celltype_mean', all_slides_spearmanr_r.mean(1).values) # mean along all cell types
 
-    all_slides_pearson.to_csv(os.path.join(args.exp_path, "all_slides_all_celltypes_pearson_embed.csv"))
-    print(f"all_slides_pearson: {all_slides_pearson}")
+    all_slides_spearmanr_r.to_csv(os.path.join(args.exp_path, "all_slides_all_celltypes_spearmanr_r_embed.csv"))
+    print(f"all_slides_spearmanr_r: {all_slides_spearmanr_r}")
 
     print(f"all_splits_loss: {all_splits_loss}")
 
-    with open(os.path.join(args.exp_path, "all_slides_test_spot_predictions_embed.pkl"), "wb") as f:
+    with open(os.path.join(args.exp_path, "all_slides_test_spot_predictions_embed_from_spearmanpy.pkl"), "wb") as f:
         pickle.dump(all_slides_predictions, f)
 
     # Independent test set
@@ -281,44 +289,44 @@ if __name__ == "__main__":
 
             config['HyperParams']['LoraCfgParams'] = config['LoraCfgParams']
 
-            all_splits_pearson = {}
-            all_slides_pearson = {}
+            all_splits_spearmanr_r = {}
+            all_slides_spearmanr_r = {}
             all_slides_predictions = {}
             all_splits_loss = {}
             
             for cur_split in config["CKPTS"]['split_ids']:
                 print(f"Model_fold{cur_split} is evaluating independent_set {independent_set} of {len(test_slides)} slides:\n {test_slides}")
 
-                dict_split_cell_type_pcc, dict_slides_cell_type_pcc, dict_slides_spot_predictions, test_loss = external_eval(cur_split, test_loader, args.exp_path, device=device, **config["HyperParams"])
+                dict_split_cell_type_spearmanr_r, dict_slides_cell_type_spearmanr_r, dict_slides_spot_predictions, test_loss = external_eval(cur_split, test_loader, args.exp_path, device=device, **config["HyperParams"])
 
-                all_splits_pearson.update({cur_split: pd.DataFrame(dict_split_cell_type_pcc).rename(columns=cell_type_info)})
+                all_splits_spearmanr_r.update({cur_split: pd.DataFrame(dict_split_cell_type_spearmanr_r).rename(columns=cell_type_info)})
                 all_splits_loss.update({cur_split: test_loss})
 
                 slide_name_mapping = {f"id_{idx}": f"fold{cur_split}_{test_slides[idx]}" for idx in range(len(test_slides))}
-                dict_slides_cell_type_pcc = {slide_name_mapping[slide_id]: dict_slides_cell_type_pcc[slide_id] for slide_id in dict_slides_cell_type_pcc.keys()}
-                all_slides_pearson.update(dict_slides_cell_type_pcc)
+                dict_slides_cell_type_spearmanr_r = {slide_name_mapping[slide_id]: dict_slides_cell_type_spearmanr_r[slide_id] for slide_id in dict_slides_cell_type_spearmanr_r.keys()}
+                all_slides_spearmanr_r.update(dict_slides_cell_type_spearmanr_r)
 
                 dict_slides_spot_predictions = {slide_name_mapping[slide_id]: dict_slides_spot_predictions[slide_id] for slide_id in dict_slides_spot_predictions.keys()}
                 all_slides_predictions.update(dict_slides_spot_predictions)
 
-            all_splits_pearson = pd.concat(all_splits_pearson.values(), keys=[name for name in all_splits_pearson.keys()])
+            all_splits_spearmanr_r = pd.concat(all_splits_spearmanr_r.values(), keys=[name for name in all_splits_spearmanr_r.keys()])
 
-            all_splits_pearson.loc["split_mean"] = (all_splits_pearson.iloc[0::2, :].mean(0)) # mean along all splits
-            all_splits_pearson.insert(all_splits_pearson.shape[1], 'celltype_mean', all_splits_pearson.mean(1).values) # mean along all cell types
+            all_splits_spearmanr_r.loc["split_mean"] = (all_splits_spearmanr_r.iloc[0::2, :].mean(0)) # mean along all splits
+            all_splits_spearmanr_r.insert(all_splits_spearmanr_r.shape[1], 'celltype_mean', all_splits_spearmanr_r.mean(1).values) # mean along all cell types
 
-            all_splits_pearson.to_csv(os.path.join(args.exp_path, f"all_splits_all_celltypes_pearson_{independent_set}.csv"))
-            print(f"all_splits_pearson: {all_splits_pearson}")
+            all_splits_spearmanr_r.to_csv(os.path.join(args.exp_path, f"all_splits_all_celltypes_spearmanr_r_{independent_set}.csv"))
+            print(f"all_splits_spearmanr_r: {all_splits_spearmanr_r}")
             
-            all_slides_pearson = pd.concat(all_slides_pearson.values(), keys=[name for name in all_slides_pearson.keys()])
-            all_slides_pearson = all_slides_pearson.rename(columns=cell_type_info)
+            all_slides_spearmanr_r = pd.concat(all_slides_spearmanr_r.values(), keys=[name for name in all_slides_spearmanr_r.keys()])
+            all_slides_spearmanr_r = all_slides_spearmanr_r.rename(columns=cell_type_info)
             
-            all_slides_pearson.loc["slide_mean"] = (all_slides_pearson.iloc[0::2, :].mean(0)) # mean along all splits
-            all_slides_pearson.insert(all_slides_pearson.shape[1], 'celltype_mean', all_slides_pearson.mean(1).values) # mean along all cell types
+            all_slides_spearmanr_r.loc["slide_mean"] = (all_slides_spearmanr_r.iloc[0::2, :].mean(0)) # mean along all splits
+            all_slides_spearmanr_r.insert(all_slides_spearmanr_r.shape[1], 'celltype_mean', all_slides_spearmanr_r.mean(1).values) # mean along all cell types
 
-            all_slides_pearson.to_csv(os.path.join(args.exp_path, f"all_slides_all_celltypes_pearson_{independent_set}.csv"))
-            print(f"all_slides_pearson: {all_slides_pearson}")
+            all_slides_spearmanr_r.to_csv(os.path.join(args.exp_path, f"all_slides_all_celltypes_spearmanr_r_{independent_set}.csv"))
+            print(f"all_slides_spearmanr_r: {all_slides_spearmanr_r}")
 
             print(f"all_splits_loss: {all_splits_loss}")
 
-            with open(os.path.join(args.exp_path, f"all_slides_spot_predictions_{independent_set}.pkl"), "wb") as f:
+            with open(os.path.join(args.exp_path, f"all_slides_spot_predictions_{independent_set}_from_spearmanpy.pkl"), "wb") as f:
                 pickle.dump(all_slides_predictions, f)
