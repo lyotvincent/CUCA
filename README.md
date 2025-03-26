@@ -75,7 +75,7 @@ The packages required have been provided in the file [environment.yml](environme
 ### Installation
 
 <!-- CUCA is implemented by Python 3.9 and PyTorch 2.4.1  -->
-To install the environment, you can run the command in the terminal:
+✨ To install the environment using **Conda**, you can run the command in the terminal:
 
 ```shell
 conda env create -f environment.yml
@@ -84,9 +84,34 @@ conda activate cuca
 
 OR
 
-✨ You can use the Docker image for a streamlined setup. The Dockerfile is provided [HERE](Dockerfile). Simply build and run the image to get started.
+✨ You can use the **Docker** image for a streamlined setup. We provide two ways to use docker images:
 
+1. Simply pull images from the Registry.
 
+```shell
+docker pull crpi-vgk1sxg5ba2a8sff.cn-hangzhou.personal.cr.aliyuncs.com/cuca_proj_env/cuca_env:v1_0
+```
+
+2. Build the image from the [Dockerfile, HERE](Dockerfile)
+
+```shell
+docker build -t cuca_env:v1_0 .
+docker images
+```
+
+When docker image is ready, then you can launch the docker container.
+
+```shell
+docker run -dit \
+    --name cuca_proj_env \
+    --gpus all \
+    --cpus 64 \
+    --mount type=bind,source=/your_proj_absolute_path/CUCA/,target=/home/appuser/CUCA \
+    --shm-size 128g \
+    -p 6009:6009 \
+    cuca_env:v1_0 \
+    /bin/bash -c 'while true; do echo `date`; sleep 600; done'
+```
 
 ## 2. Data 
 

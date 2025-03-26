@@ -49,8 +49,10 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple &&\
 
 
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple &&\
-    pip install transformers datasets geopandas spatialdata cellvit-light &&\
+    pip install einops pytorch-lightning transformers datasets geopandas spatialdata cellvit-light &&\
     pip install future tensorboard nvitop clearml tidecv jupyter jupyterlab &&\
+    pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.4.1+cu121.html &&\
+    pip install torch_geometric &&\
     pip cache purge
 
 
@@ -59,10 +61,6 @@ USER ${user}
 WORKDIR /home/${user}
 # set working directory
 
-
-RUN git clone https://github.com/Mahmoodlab/CONCH.git &&\
-    pip install git+file:///root/CONCH &&\
-    rm -r CONCH
 
 RUN pip install hestcore -i https://pypi.Python.org/simple/ &&\
     pip cache purge

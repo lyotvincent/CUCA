@@ -224,6 +224,7 @@ dependencies:
       - dill==0.3.8
       - distributed==2024.5.1
       - distributed-ucxx-cu12==0.38.0
+      - einops==0.8.0
       - et-xmlfile==2.0.0
       - fasteners==0.19
       - fastjsonschema==2.20.0
@@ -343,6 +344,7 @@ dependencies:
       - pyparsing==3.2.0
       - pyproj==3.6.1
       - python-json-logger==2.0.7
+      - pytorch-lightning==2.4.0
       - pyvips==2.2.3
       - raft-dask-cu12==24.6.0
       - rapids-dask-dependency==24.6.0
@@ -384,6 +386,12 @@ dependencies:
       - tokenizers==0.20.3
       - toolz==1.0.0
       - torch==2.4.1
+      - torch-geometric==2.6.1
+      - torch_cluster==1.6.3
+      - torch_scatter==2.1.2
+      - torch_sparse==0.6.18
+      - torch_spline_conv==1.2.2
+      - torchmetrics==1.6.0
       - torchaudio==2.4.1
       - torchvision==0.19.1
       - transformers==4.46.3
