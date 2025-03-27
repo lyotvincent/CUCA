@@ -1,7 +1,7 @@
 # CUCA: Predicting fine-grained cell types from histology images through cross-modal learning in spatial transcriptomics
 
 > [**Predicting fine-grained cell types from histology images through cross-modal learning in spatial transcriptomics**]() <br>
-> Chaoyang Yan, Zhihan Ruan, Yichen Pan, Xue Han, Songkang Chen, Yuanyu Li, and Jian Liu*. <br>
+> Chaoyang Yan, Zhihan Ruan, Songkang Chen, Yichen Pan, Xue Han, Yuanyu Li, and Jian Liu*. <br>
 > Centre for Bioinformatics and Intelligent Medicine, College of Computer Science, Nankai University <br>
 > Submitted to ISMB/ECCB 2025 <br>
 
@@ -68,11 +68,13 @@ intercellular co-localization pattern analysis reveals that CUCA provides valuab
 
 The codes have been implemented on Ubuntu 22.04 LTS. The installation in other operation systems (Windows or MAC) should be cautious due to python packages.
 
-### Packages and version
-
-The packages required have been provided in the file [environment.yml](environment.yml)
 
 ### Installation
+The packages required have been provided in the file [environment.yml](environment.yml)
+
+**We provide two ways to configure the environment.**
+
+#### Creating the **Conda** Environment
 
 <!-- CUCA is implemented by Python 3.9 and PyTorch 2.4.1  -->
 ✨ To install the environment using **Conda**, you can run the command in the terminal:
@@ -82,25 +84,28 @@ conda env create -f environment.yml
 conda activate cuca
 ```
 
-OR
+**OR**
 
-✨ You can use the **Docker** image for a streamlined setup. We provide two ways to use docker images:
+#### Pulling the **Docker** Image
 
-1. Simply pull images from the Registry.
-
+✨ You can directly pull the pre-built image from [DockerHub Image Registry](https://hub.docker.com/r/charing/cuca_env):
+```shell
+docker pull charing/cuca_env:v1_0
+```
+if request canceled due to network issue, you can pull the pre-built image from Alibaba Cloud Container Registry 
 ```shell
 docker pull crpi-vgk1sxg5ba2a8sff.cn-hangzhou.personal.cr.aliyuncs.com/cuca_proj_env/cuca_env:v1_0
 ```
 
-2. Build the image from the [Dockerfile, HERE](Dockerfile)
-
+#### Building the Image
+If you want to build the image yourself, you can use the [Dockerfile provided HERE](Dockerfile)
 ```shell
 docker build -t cuca_env:v1_0 .
 docker images
 ```
 
-When docker image is ready, then you can launch the docker container.
-
+#### Starting the Container
+Once the image is ready, you can start the Docker container using the following command:
 ```shell
 docker run -dit \
     --name cuca_proj_env \
@@ -112,6 +117,17 @@ docker run -dit \
     cuca_env:v1_0 \
     /bin/bash -c 'while true; do echo `date`; sleep 600; done'
 ```
+
+Please replace `/your_proj_absolute_path/CUCA/` with the absolute path of your local CUCA project.
+
+#### Entering the Container
+
+After starting the container, you can enter the container using the following command:
+
+```shell
+docker exec -it cuca_proj_env /bin/bash
+```
+
 
 ## 2. Data 
 
