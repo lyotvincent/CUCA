@@ -120,6 +120,8 @@ docker run -dit \
 
 Please replace `/your_proj_absolute_path/CUCA/` with the absolute path of your local CUCA project.
 
+**NOTE**: you may need to configure `nvidia-container-toolkit` if report bug: `docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]]`.
+
 #### Entering the Container
 
 After starting the container, you can enter the container using the following command:
